@@ -1,6 +1,8 @@
 # tools.py
 import json
 import requests
+from langchain_community.vectorstores import FAISS
+from langchain_community.document_loaders import PDFPlumberLoader, Docx2txtLoader
 from dotenv import load_dotenv
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_openai import OpenAIEmbeddings
@@ -19,6 +21,7 @@ tavily_search_tool = TavilySearchResults(max_results=3)
 # 문서 검색을 위한 벡터스토어 설정
 VECTORSTORE_DSN = "postgresql+psycopg2://play:123@localhost:5432/play"
 DOCUMENT_COLLECTION_NAME = "play_documents"
+EPHEMERAL_STORES = {}  # key: file_name, value: FAISS VectorStore
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 document_vector_store = PGVector(
@@ -39,135 +42,90 @@ def web_search(query: str) -> str:
 
 def document_search(query: str) -> str:
     """
-    🔧 디버깅이 강화된 문서 검색 함수
-    - 점수 계산 과정 상세 로깅
-    - 임계값 문제 해결
-    - 더 관대한 필터링
+    업로드된 인메모리 FAISS 인덱스(EPHEMERAL_STORES)에서만 검색.
+    - DB는 사용하지 않음
+    - 기존의 상세 디버깅/점수 계산 로직은 유지·간소화
     """
     try:
-        print(f"📄 문서 검색 수행: '{query}'")
-        
-        # 1. 초기 검색
-        retriever = document_vector_store.as_retriever(search_kwargs={"k": 15})
-        documents = retriever.invoke(query)
-        
-        if not documents:
-            print("   ❌ 검색된 문서가 없음")
-            return "업로드된 문서에서 관련 정보를 찾을 수 없습니다. 먼저 문서를 업로드해주세요."
-        
-        print(f"   🔍 초기 검색 결과: {len(documents)}개 문서")
-        
-        # 2. 🔥 디버깅: 문서 내용 미리보기
-        for i, doc in enumerate(documents[:3], 1):
-            preview = doc.page_content[:100].replace('\n', ' ')
-            source = doc.metadata.get('source', '알 수 없음')
-            print(f"   📋 문서 {i}: {source} - {preview}...")
-        
-        # 3. 관련성 점수 계산 (디버깅 강화)
-        scored_docs = []
-        query_embedding = embeddings.embed_query(query)
-        print(f"   🧮 쿼리 임베딩 생성 완료 (차원: {len(query_embedding)})")
-        
-        for i, doc in enumerate(documents):
+        print(f"📄 인메모리 문서 검색: '{query}'")
+
+        if not EPHEMERAL_STORES:
+            return "업로드한 문서를 찾을 수 없습니다. 먼저 문서를 업로드해주세요."
+
+        # 각 파일 인덱스에서 k개씩 수집
+        k_per_file = 5
+        gathered = []
+        for fname, store in EPHEMERAL_STORES.items():
             try:
-                # 문서 임베딩 계산
-                doc_embedding = embeddings.embed_query(doc.page_content)
-                
-                # 코사인 유사도 계산
-                similarity = cosine_similarity(
-                    [query_embedding], [doc_embedding]
-                )[0][0]
-                
-                # 🔥 디버깅: 점수 출력
-                source = doc.metadata.get('source', '알 수 없음')
-                chunk_id = doc.metadata.get('chunk_id', 0)
-                print(f"   📊 문서 {i+1} 점수: {similarity:.4f} ({source}, 청크 {chunk_id})")
-                
-                scored_docs.append({
-                    'document': doc,
-                    'score': similarity,
-                    'source': source,
-                    'chunk_id': chunk_id
-                })
-                
+                docs = store.as_retriever(search_kwargs={"k": k_per_file}).get_relevant_documents(query)
+                gathered.extend(docs)
             except Exception as e:
-                print(f"   ❌ 문서 {i+1} 점수 계산 실패: {e}")
-                continue
-        
-        if not scored_docs:
+                print(f"   ❌ '{fname}' 검색 실패: {e}")
+
+        if not gathered:
+            return f"'{query}'에 대한 관련 내용을 찾지 못했습니다."
+
+        # 점수 계산(코사인 유사도)
+        q_emb = embeddings.embed_query(query)
+        scored = []
+        for i, d in enumerate(gathered):
+            try:
+                d_emb = embeddings.embed_query(d.page_content)
+                sim = cosine_similarity([q_emb], [d_emb])[0][0]
+                scored.append({
+                    "document": d,
+                    "score": float(sim),
+                    "source": d.metadata.get("source", "알 수 없음"),
+                    "chunk_id": d.metadata.get("chunk_id", i),
+                })
+            except Exception as e:
+                print(f"   ❌ 점수계산 실패: {e}")
+
+        if not scored:
             return "문서 유사도 계산에 실패했습니다."
-        
-        # 4. 점수 정렬
-        scored_docs.sort(key=lambda x: x['score'], reverse=True)
-        
-        # 🔥 점수 분포 분석
-        scores = [doc['score'] for doc in scored_docs]
-        max_score = max(scores) if scores else 0
-        min_score = min(scores) if scores else 0
-        avg_score = sum(scores) / len(scores) if scores else 0
-        
-        print(f"   📈 점수 분포: 최고 {max_score:.4f}, 최저 {min_score:.4f}, 평균 {avg_score:.4f}")
-        
-        # 5. 🔥 더 관대한 임계값 설정
-        # 기존의 0.7, 0.5는 너무 높았음
-        PRIMARY_THRESHOLD = 0.3    # 0.7 → 0.3
-        FALLBACK_THRESHOLD = 0.1   # 0.5 → 0.1
-        
-        relevant_docs = [doc for doc in scored_docs if doc['score'] >= PRIMARY_THRESHOLD]
-        print(f"   ✅ 1차 필터링 (임계값 {PRIMARY_THRESHOLD}): {len(relevant_docs)}개 문서")
-        
-        # 관련성이 높은 문서가 없으면 임계값을 더 낮춤
-        if not relevant_docs:
-            relevant_docs = [doc for doc in scored_docs if doc['score'] >= FALLBACK_THRESHOLD]
-            print(f"   🔄 2차 필터링 (임계값 {FALLBACK_THRESHOLD}): {len(relevant_docs)}개 문서")
-        
-        # 그래도 없으면 상위 5개라도 보여주기
-        if not relevant_docs:
-            relevant_docs = scored_docs[:5]
-            print(f"   🆘 강제 선택: 상위 {len(relevant_docs)}개 문서 (점수 무관)")
-        
-        # 6. 중복 제거 (간소화)
-        unique_docs = remove_duplicate_content(relevant_docs)
-        print(f"   🔄 중복 제거 후: {len(unique_docs)}개 문서")
-        
-        # 7. 상위 결과만 선택
-        top_docs = unique_docs[:5]
-        
-        # 8. 컨텍스트 구성
-        context_parts = []
-        for i, doc_info in enumerate(top_docs, 1):
-            doc = doc_info['document']
-            score = doc_info['score']
-            source = doc_info['source']
-            content = doc.page_content.strip()
-            
-            # 🔥 점수 표시를 더 친화적으로
-            score_desc = "높음" if score >= 0.5 else "중간" if score >= 0.3 else "낮음"
-            
-            context_part = f"""📋 **문서 {i}** (관련성: {score_desc}) - {source}
-{content}
 
-"""
-            context_parts.append(context_part)
-        
-        # 최종 결과
-        if context_parts:
-            context = f"""🔍 **'{query}' 검색 결과** ({len(context_parts)}개 관련 문서 발견)
+        scored.sort(key=lambda x: x['score'], reverse=True)
 
-{"".join(context_parts)}
-📌 **검색 정보**: {len(documents)}개 문서 중 {len(context_parts)}개 문서를 선별했습니다.
-📊 **점수 범위**: {max_score:.3f} ~ {min_score:.3f} (평균 {avg_score:.3f})"""
-            
-            print(f"   📊 최종 컨텍스트: {len(context)}자, {len(context_parts)}개 문서 포함")
-            return context
-        else:
-            return f"'{query}'와 관련된 정보를 찾을 수 없습니다."
-        
+        # 임계값(관대)
+        PRIMARY = 0.3
+        FALLBACK = 0.1
+        picked = [x for x in scored if x['score'] >= PRIMARY] or \
+                 [x for x in scored if x['score'] >= FALLBACK] or \
+                 scored[:5]
+
+        # 중복 제거(간단)
+        seen = set()
+        unique = []
+        for x in picked:
+            key = (x['source'], str(x['document'].page_content)[:100].lower())
+            if key not in seen:
+                seen.add(key)
+                unique.append(x)
+
+        top = unique[:5]
+        if not top:
+            return f"'{query}'와 관련된 정보를 찾지 못했습니다."
+
+        # 컨텍스트 구성
+        parts = []
+        scores = [x['score'] for x in scored]
+        for i, x in enumerate(top, 1):
+            lvl = "높음" if x['score'] >= 0.5 else "중간" if x['score'] >= 0.3 else "낮음"
+            content = x['document'].page_content.strip()
+            parts.append(
+                f"📋 **문서 {i}** (관련성: {lvl}) - {x['source']} (청크 {x['chunk_id']})\n{content}\n"
+            )
+
+        return (
+            f"🔍 **'{query}' 검색 결과** ({len(parts)}개 관련 문서)\n\n" +
+            "\n".join(parts) +
+            f"\n📌 **검색 정보**: 후보 {len(scored)}개 중 상위 {len(top)}개 선별\n" +
+            f"📊 **점수 범위**: {max(scores):.3f} ~ {min(scores):.3f} (평균 {sum(scores)/len(scores):.3f})"
+        )
+
     except Exception as e:
-        print(f"❌ 문서 검색 오류: {e}")
-        import traceback
-        traceback.print_exc()  # 상세한 에러 정보
         return f"문서 검색 중 오류가 발생했습니다: {e}"
+
 
 # 🔥 간소화된 중복 제거 함수
 def remove_duplicate_content(scored_docs: list) -> list:
@@ -244,47 +202,63 @@ def jaccard_similarity(text1: str, text2: str) -> float:
 
 def upload_document(file_path: str, file_name: str) -> str:
     """
-    🔥 개선된 문서 업로드 - 더 작은 청크 크기로 정확도 향상
+    🔥 영구 DB에 저장하지 않고, 현재 프로세스 메모리(모듈 전역)에만 인덱스 생성
+    - PDF/Docx는 로더로 텍스트 추출
+    - txt/md는 그대로 디코딩
+    - FAISS 인메모리 인덱스 생성 → EPHEMERAL_STORES[file_name]에 저장
     """
     try:
-        print(f"📁 문서 업로드 중: {file_name}")
-        
-        # 인코딩 감지 및 파일 읽기
-        with open(file_path, 'rb') as f:
-            raw_data = f.read()
-        encoding = chardet.detect(raw_data)['encoding'] or 'utf-8'
-        content = raw_data.decode(encoding, errors='replace')
-        
-        # NULL 문자 제거
-        content = content.replace('\x00', '')
+        print(f"📁 문서 업로드(인메모리): {file_name}")
 
-        # 🔥 더 작은 청크 크기로 변경 (정확도 향상)
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=600,        # 1000 → 600으로 축소
-            chunk_overlap=150,     # 200 → 150으로 조정
+        ext = (file_name.rsplit(".", 1)[-1] if "." in file_name else "").lower()
+        texts = []
+
+        if ext == "pdf":
+            loader = PDFPlumberLoader(file_path)
+            docs = loader.load()
+            texts = [d.page_content for d in docs if d.page_content and d.page_content.strip()]
+        elif ext in ("docx", "doc"):
+            loader = Docx2txtLoader(file_path)
+            docs = loader.load()
+            texts = [d.page_content for d in docs if d.page_content and d.page_content.strip()]
+        else:
+            # txt, md 등 일반 텍스트
+            with open(file_path, 'rb') as f:
+                raw = f.read()
+            import chardet
+            enc = chardet.detect(raw)['encoding'] or 'utf-8'
+            content = raw.decode(enc, errors='replace').replace('\x00', '')
+            texts = [content]
+
+        if not texts:
+            return f"❌ '{file_name}'에서 텍스트를 추출하지 못했습니다."
+
+        # 기존과 동일한 분할 정책(정확도 ↑)
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=600,
+            chunk_overlap=150,
             separators=["\n\n", "\n", ". ", "! ", "? ", " ", ""]
         )
-        chunks = text_splitter.split_text(content)
+        chunks = []
+        for t in texts:
+            chunks.extend(splitter.split_text(t))
+
+        if not chunks:
+            return f"❌ '{file_name}'에서 생성된 청크가 없습니다."
+
         metadatas = [{"source": file_name, "chunk_id": i} for i in range(len(chunks))]
-        
-        print(f"   📄 총 {len(chunks)}개 청크로 분할됨 (청크 크기: 600자)")
-        
-        # 배치 처리
 
-        document_vector_store.add_texts(
-            texts=chunks,
-            metadatas=metadatas,
-            collection_name=DOCUMENT_COLLECTION_NAME
-        )
-            
-         
+        # 🔥 인메모리 FAISS 인덱스 생성 (DB에 쓰지 않음)
+        vs = FAISS.from_texts(texts=chunks, embedding=embeddings, metadatas=metadatas)
 
-        success_msg = f"""✅ **'{file_name}' 문서 업로드 완료!**"""
-        
-        return success_msg
+        # 전역 저장(세션/프로세스 한정)
+        EPHEMERAL_STORES[file_name] = vs
+
+        return f"✅ **'{file_name}' 업로드 완료!** (인메모리 인덱스, 청크 {len(chunks)}개)"
 
     except Exception as e:
         return f"문서 업로드 중 오류가 발생했습니다: {e}"
+
 
 def anki_card_saver(front: str, back: str, deck: str = "기본", tags: list = None) -> str:
     """
