@@ -1,0 +1,16 @@
+"""
+!!! 반드시 사용할 때 주의할 점!!!
+
+안키 관련 주의사항
+    1. 안키 / 도구 -> 확장프로그램 -> 에드온을 설치한다. 
+    2. 환경에 맞게 ip를 바꿔준다.
+    3. 방화벽을 꺼준다.
+    ==> 끄는 방법
+
+    PowerShell에서 실행
+        - "Windows PowerShell" 우클릭 → "관리자 권한으로 실행"
+        - 다음 명령어 실행:
+            powershellNew-NetFirewallRule -DisplayName "AnkiConnect-WSL" -Direction Inbound -Protocol TCP -Loc
+
+
+"""
