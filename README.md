@@ -29,6 +29,15 @@ Anki MCP 기반 개인화 복습 챗봇
 
 ## ✅ 프로젝트 배경 및 목적
 
+사용자가 질문 ➡️ 시스템 **DB, PDF 문서, 이미지 검색**을 동시에 활용 ➡️ 최적 답변을 생성 ➡️ 즉시 사용자 전달
+
+
+- **학습용(PostgreSQL, Anki API 연동):**
+    - 질문·답변을 4지선다 문제와 해설로 변환하여 복습 가능하게 저장
+- **검색 최적화용(PostgreSQL):**
+    - 질문·답변을 요약하고, “내가 했던 질문인지”를 추적할 수 있도록 저장
+
+이를 통해 단순 Q/A 챗봇을 넘어, **개인화된 복습이 가능한 지식 관리형 GPT 시스템**을 구현
 
 ## 🖐️ 프로젝트 소개
 
@@ -39,7 +48,10 @@ Anki MCP 기반 개인화 복습 챗봇
 
 
 # 4. 기술 스택
-
+<img width="242" height="213" alt="image" src="https://github.com/user-attachments/assets/8007f8de-0d1c-43de-95d0-7f895f3c2158" />
+TAVILY
+LANGCHAIN
+POSTGRESQL
 
 
 # 5. 수행결과
