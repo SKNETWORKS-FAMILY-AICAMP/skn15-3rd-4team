@@ -28,6 +28,10 @@
 Anki MCP 기반 개인화 복습 챗봇
 
 ## ✅ 프로젝트 배경 및 목적
+<img width="548" height="389" alt="image" src="https://github.com/user-attachments/assets/81d4958e-b0a9-4b46-a34e-8f7f8f46e255" />
+
+
+
 
 챗지피티는 사용자의 학습 지도 역할도 수행하고 있음. OpenAI는 최근 공부하는 학생들을 위한 ‘학습 모드’를 내놓았음.
 
@@ -96,6 +100,12 @@ https://www.betanews.net/article/view/beta202507300054
 # 5. 수행결과
 
 [![시연 영상](https://img.youtube.com/vi/UJvSXeK98tw/maxresdefault.jpg)](https://youtu.be/UJvSXeK98tw)
+
+## 라우팅
+|1|2|
+|------|---|
+|<img width="669" height="579" alt="image" src="https://github.com/user-attachments/assets/ae5874d6-0ce8-41f7-8c1a-2dbf70240204" />|<img width="669" height="579" alt="image" src="https://github.com/user-attachments/assets/b823d867-a577-4627-b131-1bd3f9e04aa3" />|
+
 
 
 # 6. 한 줄 회고
