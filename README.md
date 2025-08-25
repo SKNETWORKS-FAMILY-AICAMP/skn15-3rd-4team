@@ -25,25 +25,33 @@
 
 
 ## 📕 프로젝트명
-Anki MCP 기반 개인화 복습 챗봇
+Anki 기반 개인화 복습 챗봇
 
 ## ✅ 프로젝트 배경 및 목적
-<img width="548" height="389" alt="image" src="https://github.com/user-attachments/assets/81d4958e-b0a9-4b46-a34e-8f7f8f46e255" />
 
 
 
+<img width="791" height="452" alt="image" src="https://github.com/user-attachments/assets/c208c1f9-151a-4699-8d71-41c074fde56e" />
 
-챗지피티는 사용자의 학습 지도 역할도 수행하고 있음. OpenAI는 최근 공부하는 학생들을 위한 ‘학습 모드’를 내놓았음.
+
+근래들어 Chat GPT의 사용자는 기하급수적으로 늘어나고 있다. Chat GPT를 학습에 사용하는 사용자 또한 유의미하게 많다고 볼 수 있으며, 사람들은 궁금한 점이 있다면 GPT에게 물어보기도 하고 답을 구하기도 한다.
+하지만 기존의 GPT 성능 만으로는 다소 부족한 부분이 있다.
 
 https://www.betanews.net/article/view/beta202507300054
 
 * 하지만 이러한 학습 모드는 **범용적인 학습만을 지원**하기 때문에 **사용자가 특정 시험을 준비하고 싶을 때 사용하기엔 부적절**한 면이 존재함
 
-* 또 **반복 학습이나 복습에는 다소 취약**한 부분이 있음
+* 또 10일, 20일이 지나면 대화가 누적되어 이전 내역을 찾기 어려워지고, 때문에 **장기적인 반복 학습이나 복습에는 다소 취약**한 부분이 있음
 
 * 이러한 부분을 보완하기 위해 **학습용 웹 어플리케이션인 ANKI와 연동할 수 있는 챗봇**을 구현함.
 
-* 챗봇은 사용자가 질문했을 때 시스템**DB, PDF 문서, 이미지 검색을 동시에 활용**하여 **최적의 답변**을 구현하는 기능을 가지고 있음.
+  <img width="600" height="529" alt="image" src="https://github.com/user-attachments/assets/ccf7ad95-49d0-40cc-9e71-2a14028be531" />
+
+* Anki는 위와같은 망각 주기를 이용하여 사용자가 효과적으로 반복 학습을 할 수 있는 학습용 웹 어플리케이션임.
+
+* 챗봇은 Anki의 애드온인 Anki Connection을 연동하여, 사용자가 질문한 내용이나 학습한 내용을 바탕으로 Anki에 저장하고자 함.
+
+* 또, 사용자가 질문했을 때 시스템**DB, PDF 문서, 이미지 검색을 동시에 활용**하여 **최적의 답변**을 구현하여 환각 및 오정보를 최소한으로 한 학습 어플리케이션으로 제작하고자 함
 
 
 
@@ -98,6 +106,9 @@ https://www.betanews.net/article/view/beta202507300054
 
 
 # 5. 수행결과
+### 모델 그래프
+<img width="548" height="389" alt="image" src="https://github.com/user-attachments/assets/81d4958e-b0a9-4b46-a34e-8f7f8f46e255" />
+
 ### 시연 영상
 
 [![시연 영상](https://img.youtube.com/vi/UJvSXeK98tw/maxresdefault.jpg)](https://youtu.be/UJvSXeK98tw)
