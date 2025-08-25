@@ -13,4 +13,8 @@
             powershellNew-NetFirewallRule -DisplayName "AnkiConnect-WSL" -Direction Inbound -Protocol TCP -Loc
 
 
+app.py    -> stramlit 구현
+tools.py  -> 라우팅마다 쓰이는 도구들
+agent.py  -> 라우팅 어떻게 선택할건지
+utilts.py -> 안키관련 정규식
 """
