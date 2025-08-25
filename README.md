@@ -48,10 +48,16 @@ Anki MCP 기반 개인화 복습 챗봇
 
 
 # 4. 기술 스택
-<img width="242" height="213" alt="image" src="https://github.com/user-attachments/assets/8007f8de-0d1c-43de-95d0-7f895f3c2158" />
-TAVILY
-LANGCHAIN
-POSTGRESQL
+### 기술 스택
+
+![ChatGPT](https://img.shields.io/badge/chatGPT-74aa9c?style=for-the-badge&logo=openai&logoColor=white)
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-%23FE4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white)
+
+### 소통
+
+![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)
 
 
 # 5. 수행결과
