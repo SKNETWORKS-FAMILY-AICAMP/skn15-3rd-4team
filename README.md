@@ -98,13 +98,19 @@ https://www.betanews.net/article/view/beta202507300054
 
 
 # 5. 수행결과
+### 시연 영상
 
 [![시연 영상](https://img.youtube.com/vi/UJvSXeK98tw/maxresdefault.jpg)](https://youtu.be/UJvSXeK98tw)
 
-## 라우팅
+### 라우팅
+
 |1|2|
 |------|---|
 |<img width="669" height="579" alt="image" src="https://github.com/user-attachments/assets/ae5874d6-0ce8-41f7-8c1a-2dbf70240204" />|<img width="669" height="579" alt="image" src="https://github.com/user-attachments/assets/b823d867-a577-4627-b131-1bd3f9e04aa3" />|
+
+
+## Anki 저장 목록
+<img width="1895" height="1016" alt="image" src="https://github.com/user-attachments/assets/1c9ac348-c698-416d-bc81-d48a232867ec" />
 
 
 
