@@ -154,8 +154,9 @@
 |<img width="669" height="579" alt="image" src="https://github.com/user-attachments/assets/ae5874d6-0ce8-41f7-8c1a-2dbf70240204" />|<img width="669" height="579" alt="image" src="https://github.com/user-attachments/assets/b823d867-a577-4627-b131-1bd3f9e04aa3" />|
 
 
-## Anki 저장 목록
-<img width="1895" height="1016" alt="image" src="https://github.com/user-attachments/assets/1c9ac348-c698-416d-bc81-d48a232867ec" />
+## Anki 저장 목록과 대화 내역 비교
+<img width="678" height="505" alt="image" src="https://github.com/user-attachments/assets/f549e44a-615d-4e4b-aa15-64a748052d2c" />
+
 
 
 # 6. 다음 프로젝트 목표...
