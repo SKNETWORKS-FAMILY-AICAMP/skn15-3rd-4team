@@ -7,48 +7,28 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_postgres import PGVector
 from langgraph.graph import StateGraph, END
-from tools import web_search, anki_card_saver, document_search 
+from tools import web_search, anki_card_saver, document_search, anki_vector_store
 from utils import parse_anki_cards
 
 load_dotenv()
 
-# --- 1. DB 설정 및 Retriever 생성 ---
-VECTORSTORE_DSN = "postgresql+psycopg2://play:123@localhost:5432/play"
-COLLECTION_NAME = "play_anki_cards"
-DOCUMENT_COLLECTION_NAME = "play_documents"  # 문서용 컬렉션 추가
+# 🔥 개선: Anki 카드 검색용 벡터스토어만 사용 (문서는 tools.py의 DocumentManager가 처리)
+db_retriever = anki_vector_store.as_retriever(search_kwargs={"k": 3})
 
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-vector_store = PGVector(
-    connection=VECTORSTORE_DSN,
-    embeddings=embeddings,
-    collection_name=COLLECTION_NAME,
-    use_jsonb=True,
-)
-db_retriever = vector_store.as_retriever(search_kwargs={"k": 3})
-
-# 문서용 벡터 스토어 추가
-document_vector_store = PGVector(
-    connection=VECTORSTORE_DSN,
-    embeddings=embeddings,
-    collection_name=DOCUMENT_COLLECTION_NAME,
-    use_jsonb=True,
-)
-document_retriever = document_vector_store.as_retriever(search_kwargs={"k": 5})
-
-# --- 2. LangGraph 상태(State) 정의 ---
+# --- LangGraph 상태(State) 정의 ---
 class AgentState(TypedDict):
     messages: Annotated[List[BaseMessage], operator.add]
     query: str
     route: str
     context: str
-    conversation_history: str  # 전체 대화 기록을 명시적으로 저장
+    conversation_history: str
+    session_id: str  # 🔥 추가: 세션 ID
 
-# --- 3. 노드(Node) 함수 정의 ---
+# --- 노드(Node) 함수 정의 ---
 def router_node(state: AgentState) -> dict:
     print("--- 1. ROUTER ---")
     query = state["query"]
     
-    # 🔥 대폭 개선된 라우터: 더 정확한 키워드 기반 판단
     prompt_router = ChatPromptTemplate.from_template(
         """당신은 사용자의 질문을 분석하여 가장 적합한 정보 소스로 안내하는 라우팅 전문가입니다.
         사용자의 질문을 보고 아래 4가지 카테고리 중 가장 적절한 것 하나만 골라 답하세요.
@@ -60,23 +40,17 @@ def router_node(state: AgentState) -> dict:
         - 키워드: "저장", "카드 만들어", "안키", "요약", "문제 출제", "복습 카드"
         - 예시: "이 내용 저장해줘", "카드 만들어줘", "안키에 저장"
         
-        2순위: "문서 검색"** (업로드된 문서 관련) 
+        2순위: "문서 검색" (업로드된 문서 관련) 
         - 키워드: "문서에서", "파일에서", "업로드", "올린", "첨부", "문서 내용", "문서에 있는"
         - 예시: "문서에서 찾아줘", "업로드한 파일", "올린 문서에서", "첨부 파일"
         
-        3순위: "데이터베이스"** (이전 대화/기록 관련)
+        3순위: "데이터베이스" (이전 대화/Anki 카드 검색)
         - 키워드: "이전에", "지난번", "저장한 카드", "예전에", "과거", "기록", "전에"
         - 예시: "지난번에 얘기한 거", "이전 대화", "저장된 내용"
         
-        4순위: "웹 검색"** (그 외 모든 일반 질문)
+        4순위: "웹 검색" (그 외 모든 일반 질문)
         - 위 3가지에 해당하지 않는 모든 질문
         - 예시: "날씨", "뉴스", "일반 지식", "최신 정보"
-        
-        **분석 과정:**
-        1. 질문에 "문서", "파일", "업로드", "올린" 등이 있는가? → 문서 검색
-        2. 질문에 "저장", "카드", "안키" 등이 있는가? → Anki 저장  
-        3. 질문에 "이전", "지난번", "저장한 카드" 등이 있는가? → 데이터베이스
-        4. 그 외 → 웹 검색
         
         [사용자 질문]: "{query}"
         
@@ -88,18 +62,17 @@ def router_node(state: AgentState) -> dict:
         [최종 라우팅 결과]: """
     )
     
-    llm = ChatOpenAI(model="gpt-5-mini-2025-08-07")  # 온도 0으로 일관성 확보
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     routing_chain = prompt_router | llm
     
     try:
         response = routing_chain.invoke({"query": query})
         route_text = response.content.strip()
         
-        # 🔥 라우팅 결과 정리 (마지막 줄에서 추출)
+        # 라우팅 결과 정리
         lines = route_text.split('\n')
         route = lines[-1].strip()
         
-        # 결과에서 실제 라우팅 키워드만 추출
         if "Anki 저장" in route:
             route = "Anki 저장"
         elif "문서 검색" in route:
@@ -109,6 +82,7 @@ def router_node(state: AgentState) -> dict:
         elif "웹 검색" in route:
             route = "웹 검색"
         else:
+            # 키워드 기반 폴백 라우팅
             query_lower = query.lower()
             
             if any(keyword in query_lower for keyword in ["문서에서", "파일에서", "업로드", "올린", "첨부", "문서 내용"]):
@@ -126,7 +100,6 @@ def router_node(state: AgentState) -> dict:
         
         print(f"   -> 질문: '{query[:50]}...'")
         print(f"   -> 라우팅 결과: {route}")
-        print(f"   -> LLM 전체 응답:\n{route_text}")
         
         return {"route": route}
     
@@ -144,30 +117,36 @@ def router_node(state: AgentState) -> dict:
         print(f"   🔄 폴백 라우팅: {fallback_route}")
         return {"route": fallback_route}
 
-# 라우터 관련 함수들
 def db_retriever_node(state: AgentState) -> dict:
-    print("--- 2-1. DB RETRIEVER ---")
+    """이전 대화/Anki 카드 검색"""
+    print("--- 2-1. DB RETRIEVER (이전 대화/카드) ---")
     query = state["query"]
     documents = db_retriever.invoke(query)
     context = "\n\n".join([doc.page_content for doc in documents])
-    print("   -> Context from DB retrieved.")
+    print(f"   -> {len(documents)}개 이전 기록 검색됨")
     return {"context": context}
 
 def document_retriever_node(state: AgentState) -> dict:
-    print("--- 2-2. DOCUMENT RETRIEVER ---")
+    """업로드된 문서 검색"""
+    print("--- 2-2. DOCUMENT RETRIEVER (업로드된 문서) ---")
     query = state["query"]
-    context = document_search(query=query)  # tools.py에서 구현할 함수
-    print("   -> Context from Documents retrieved.")
+    session_id = state.get("session_id", "default")
+    
+    # 🔥 개선: 세션 ID를 전달하여 세션별 문서 검색
+    context = document_search(query=query, session_id=session_id)
+    print("   -> 업로드된 문서 검색 완료")
     return {"context": context}
 
 def web_retriever_node(state: AgentState) -> dict:
+    """웹 검색"""
     print("--- 2-3. WEB RETRIEVER ---")
     query = state["query"]
     context = web_search(query=query)
-    print("   -> Context from Web retrieved.")
+    print("   -> 웹 검색 완료")
     return {"context": context}
 
 def save_anki_card_node(state: AgentState) -> dict:
+    """Anki 카드 저장"""
     print("--- 2-4. ANKI SAVER ---")
     messages = state["messages"]
     
@@ -189,7 +168,7 @@ def save_anki_card_node(state: AgentState) -> dict:
     print(f"📝 처리할 대화 기록 수: {len(relevant_messages)}개")
     print(f"📝 대화 기록 샘플:\n{conversation_text[:200]}...")
 
-    # 🔥 더욱 개선된 카드 생성 프롬프트
+    # 카드 생성 프롬프트
     prompt_card_generator = ChatPromptTemplate.from_messages([
         ("system",
          """당신은 전문 교육자이자 문제 출제자입니다. 
@@ -234,7 +213,7 @@ def save_anki_card_node(state: AgentState) -> dict:
          """),
     ])
     
-    card_generation_llm = ChatOpenAI(model="gpt-4.1")
+    card_generation_llm = ChatOpenAI(model="gpt-4o")
     card_chain = prompt_card_generator | card_generation_llm
     
     try:
@@ -258,18 +237,12 @@ def save_anki_card_node(state: AgentState) -> dict:
         
         for i, card in enumerate(cards, 1):
             try:
-                # Anki에 저장
+                # Anki에 저장 (tools.py의 anki_card_saver가 벡터DB 저장도 처리)
                 result = anki_card_saver(
                     front=card['front'], 
                     back=card['back'], 
                     deck="기본", 
                     tags=["chatbot-generated", "conversation-based"]
-                )
-                
-                # 벡터DB에도 저장 (검색 가능하도록)
-                vector_store.add_texts(
-                    texts=[f"{card['front']}\n{card['back']}"], 
-                    collection_name=COLLECTION_NAME
                 )
                 
                 saved_count += 1
@@ -311,6 +284,7 @@ def save_anki_card_node(state: AgentState) -> dict:
         return {"messages": [AIMessage(content=error_msg)]}
 
 def synthesizer_node(state: AgentState) -> dict:
+    """검색된 정보를 바탕으로 응답 생성"""
     print("--- 3. SYNTHESIZER ---")
     context = state["context"]
     messages = state["messages"]
@@ -346,7 +320,7 @@ def synthesizer_node(state: AgentState) -> dict:
 """)
     ])
     
-    llm = ChatOpenAI(model="gpt-4.1")
+    llm = ChatOpenAI(model="gpt-4o")
     chain = prompt | llm
     
     # 대화 기록을 문자열로 변환 (현재 질문 제외)
@@ -376,14 +350,15 @@ def synthesizer_node(state: AgentState) -> dict:
         error_response = f"답변 생성 중 오류가 발생했습니다: {str(e)}"
         return {"messages": [AIMessage(content=error_response)]}
 
-# --- 4. 그래프(Graph) 구성 ---
+# --- 그래프(Graph) 구성 ---
 def get_agent_executor():
+    """LangGraph 에이전트 생성"""
     graph = StateGraph(AgentState)
     
     # 노드 추가
     graph.add_node("router", router_node)
     graph.add_node("db_retriever", db_retriever_node)
-    graph.add_node("document_retriever", document_retriever_node)  # 문서 검색 노드 추가
+    graph.add_node("document_retriever", document_retriever_node)
     graph.add_node("web_retriever", web_retriever_node)
     graph.add_node("synthesizer", synthesizer_node)
     graph.add_node("saver", save_anki_card_node)
@@ -398,14 +373,14 @@ def get_agent_executor():
         {
             "Anki 저장": "saver", 
             "데이터베이스": "db_retriever", 
-            "문서 검색": "document_retriever",  # 문서 검색 라우트 추가
+            "문서 검색": "document_retriever",
             "웹 검색": "web_retriever"
         }
     )
     
     # 각 retriever에서 synthesizer로 연결
     graph.add_edge("db_retriever", "synthesizer")
-    graph.add_edge("document_retriever", "synthesizer")  # 문서 검색 후 synthesizer로
+    graph.add_edge("document_retriever", "synthesizer")
     graph.add_edge("web_retriever", "synthesizer")
     
     # 종료 엣지

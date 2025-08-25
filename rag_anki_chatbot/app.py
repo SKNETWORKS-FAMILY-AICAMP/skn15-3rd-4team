@@ -6,10 +6,15 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 # agent.py에서 Agent 실행기 함수를 가져옵니다.
 from agent import get_agent_executor
-from tools import upload_document, list_anki_decks
+from tools import upload_document, list_anki_decks, check_document_status
 
 st.set_page_config(page_title="RAG Anki 챗봇", layout="wide")
-st.title("🤖 지식 관리 및 학습 챗봇")
+st.title("단위프로젝트 챗봇 만들기")
+
+# --- 세션 ID 생성 ---
+if "session_id" not in st.session_state:
+    import uuid
+    st.session_state.session_id = str(uuid.uuid4())[:8]  # 짧은 세션 ID
 
 # --- Agent 및 세션 상태 초기화 ---
 
@@ -31,7 +36,8 @@ if "uploaded_files" not in st.session_state:
 with st.sidebar:
     st.header("📚 메뉴")
     
-    # 대화 기록 개수 표시
+    # 🔥 세션 정보 표시
+    st.info(f"🔑 세션 ID: {st.session_state.session_id}")
     st.info(f"💬 대화 기록: {len(st.session_state.messages)}개")
     
     # 파일 업로드 섹션
@@ -50,11 +56,14 @@ with st.sidebar:
                     tmp_file.write(uploaded_file.getbuffer())
                     tmp_file_path = tmp_file.name
                 
-                # 문서 업로드 처리
+                # 🔥 개선: 세션 ID를 함께 전달하여 세션별 문서 관리
                 with st.spinner("문서를 처리 중입니다..."):
-                    result = upload_document(tmp_file_path, uploaded_file.name)
+                    result = upload_document(tmp_file_path, uploaded_file.name, st.session_state.session_id)
                     st.success(result)
-                    st.session_state.uploaded_files.append(uploaded_file.name)
+                    
+                    # 업로드된 파일 목록에 추가 (중복 방지)
+                    if uploaded_file.name not in st.session_state.uploaded_files:
+                        st.session_state.uploaded_files.append(uploaded_file.name)
                 
                 # 임시 파일 삭제
                 os.unlink(tmp_file_path)
@@ -67,6 +76,12 @@ with st.sidebar:
         st.subheader("📋 업로드된 문서")
         for file_name in st.session_state.uploaded_files:
             st.text(f"• {file_name}")
+        
+        # 🔥 추가: 문서 현황 상세 확인 버튼
+        if st.button("문서 현황 상세보기"):
+            with st.spinner("문서 현황을 확인 중..."):
+                status = check_document_status(st.session_state.session_id)
+                st.text(status)
     
     st.divider()
     
@@ -84,6 +99,15 @@ with st.sidebar:
     if st.button("채팅 기록 초기화"):
         st.session_state.messages = []
         st.success("채팅 기록이 초기화되었습니다.")
+        st.rerun()
+    
+    # 🔥 새로운 세션 시작 버튼 추가
+    if st.button("새 세션 시작"):
+        import uuid
+        st.session_state.session_id = str(uuid.uuid4())[:8]
+        st.session_state.messages = []
+        st.session_state.uploaded_files = []
+        st.success(f"새 세션이 시작되었습니다! (ID: {st.session_state.session_id})")
         st.rerun()
     
     # 사용법 안내
@@ -105,6 +129,10 @@ with st.sidebar:
     - 문서 업로드 후
     - "문서에서 찾아줘"
     - "업로드한 파일에 대해 알려줘"
+    
+    **세션 관리:**
+    - 각 세션별로 문서가 독립 관리됩니다
+    - 새 세션 시작으로 깨끗한 환경에서 시작 가능
     """)
 
 # --- 메인 채팅 화면 ---
@@ -126,10 +154,11 @@ if prompt := st.chat_input("질문을 입력하세요... (예: '저장해줘', '
     with st.chat_message("assistant"):
         with st.spinner("생각 중..."):
             try:
-                # 🔥 핵심 수정: 전체 대화 기록을 Agent에게 전달
+                # 🔥 핵심 수정: 전체 대화 기록과 세션 ID를 Agent에게 전달
                 stream = agent_executor.stream({
                     "messages": st.session_state.messages.copy(),  # 전체 대화 기록 전달
-                    "query": prompt  # 현재 질문
+                    "query": prompt,  # 현재 질문
+                    "session_id": st.session_state.session_id  # 세션 ID 전달
                 })
                 
                 # 스트림에서 응답 처리
