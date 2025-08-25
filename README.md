@@ -2,6 +2,7 @@
 
 # 1. 팀 소개
 
+## Team 사고(思考)
 |이름|직책|-|
 |------|---|---|
 |최민석 @Minsuk1014 |팀장, DB 관리, 프로젝트 총괄|<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/0f7ec347-9f05-4747-878b-ae4db82ad4fa" /> |
