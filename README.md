@@ -1,15 +1,23 @@
 # skn15-3rd-4team
 
 # 1. 팀 소개
-<img width="172" height="152" alt="image" src="https://github.com/user-attachments/assets/0f7ec347-9f05-4747-878b-ae4db82ad4fa" />최민석 @Minsuk1014  
-<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/4dac5983-f9d7-4bcf-bf9f-56aca4445042" />김민규 @kmklifegk 
-<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/4dac5983-f9d7-4bcf-bf9f-56aca4445042" /> 김주형 @wugud09
+
+|이름|직책|-|
+|------|---|---|
+|최민석 @Minsuk1014 |팀장, DB 관리, 프로젝트 총괄|<img width="172" height="152" alt="image" src="https://github.com/user-attachments/assets/0f7ec347-9f05-4747-878b-ae4db82ad4fa" /> |
+|김민규 @kmklifegk |문서 기반 챗봇 프롬프트 튜닝 및 구현, 검수|<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/4dac5983-f9d7-4bcf-bf9f-56aca4445042" />|
+|김주형 @wugud09|Anki와 챗봇 연동 구현|<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/4dac5983-f9d7-4bcf-bf9f-56aca4445042" /> |
+|강민정 @kmj212936|검색 기반 챗봇 구현, Git 관리|<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/d37f032d-a391-4ee7-a640-a42411291697" />|
+|이세진 @isjini|검색 기반 챗봇 구현, Git 관리|<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/e6c2a8d2-e5ab-4d14-b74e-220eb5cbb098" /> |
+|최서린 @seorinchoi|문서 기반 챗봇 기본 기능 구현, 발표|<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/f8f8083b-8b6a-49c6-9488-4e80d3bce37f" />|
 
 
 
-<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/d37f032d-a391-4ee7-a640-a42411291697" />강민정 @kmj212936
-<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/e6c2a8d2-e5ab-4d14-b74e-220eb5cbb098" /> 이세진 @isjini
-<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/f8f8083b-8b6a-49c6-9488-4e80d3bce37f" />최서린 @seorinchoi
+
+
+
+
+
 
 
 
