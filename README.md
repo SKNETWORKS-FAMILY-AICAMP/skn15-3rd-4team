@@ -95,6 +95,7 @@ https://www.betanews.net/article/view/beta202507300054
 
 # 5. 수행결과
 
+[![시연 영상](https://img.youtube.com/vi/UJvSXeK98tw/maxresdefault.jpg)](https://youtu.be/UJvSXeK98tw)
 
 
 # 6. 한 줄 회고
