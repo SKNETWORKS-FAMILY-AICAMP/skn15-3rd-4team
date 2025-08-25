@@ -1,8 +1,8 @@
 # skn15-3rd-4team
 
 # 1. 팀 소개
-<img width="172" height="152" alt="image" src="https://github.com/user-attachments/assets/0f7ec347-9f05-4747-878b-ae4db82ad4fa" />
-최민석
+<img width="172" height="152" alt="image" src="https://github.com/user-attachments/assets/0f7ec347-9f05-4747-878b-ae4db82ad4fa" />최민석
+
 <img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/b562425d-6fe4-4da2-b40b-91b73e31f025" />
 김민규
 <img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/4dac5983-f9d7-4bcf-bf9f-56aca4445042" />
