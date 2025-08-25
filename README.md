@@ -13,7 +13,7 @@
 김주형 
 @wugud09
 
-           <img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/d37f032d-a391-4ee7-a640-a42411291697" />
+<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/d37f032d-a391-4ee7-a640-a42411291697" />
 강민정
 @kmj212936
 
