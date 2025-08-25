@@ -125,8 +125,14 @@ Anki 기반 개인화 복습 챗봇
 <img width="1895" height="1016" alt="image" src="https://github.com/user-attachments/assets/1c9ac348-c698-416d-bc81-d48a232867ec" />
 
 
+# 6. 다음 프로젝트 목표...
+<img width="1910" height="956" alt="image" src="https://github.com/user-attachments/assets/8e1791b9-be39-4c5f-9a87-cca46b11624a" />
 
-# 6. 한 줄 회고
+
+검색기능을 보완하여 구글 검색 API를 이용한 이미지 검색을 완성시키는 것이 목표이다.
+
+
+# 7. 한 줄 회고
 
 |이름|회고|
 |------|---|
