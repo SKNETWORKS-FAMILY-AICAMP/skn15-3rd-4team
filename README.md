@@ -6,7 +6,7 @@
 
 |이름|직책|-|
 |------|---|---|
-|최민석 @Minsuk1014 |팀장, DB 관리, 프로젝트 총괄|<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/0f7ec347-9f05-4747-878b-ae4db82ad4fa" /> |
+|최민석 @Minsuk1014 |팀장, 벡터 DB 최적화 구축, 랭그래프 구현, 프로젝트 총괄|<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/0f7ec347-9f05-4747-878b-ae4db82ad4fa" /> |
 |김민규 @kmklifegk |문서 기반 챗봇 프롬프트 튜닝 및 구현, 검수|<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/4dac5983-f9d7-4bcf-bf9f-56aca4445042" />|
 |김주형 @wugud09|Anki와 챗봇 연동 구현|<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/4dac5983-f9d7-4bcf-bf9f-56aca4445042" /> |
 |강민정 @kmj212936|검색 기반 챗봇 구현, Git 관리|<img width="102" height="116" alt="image" src="https://github.com/user-attachments/assets/d37f032d-a391-4ee7-a640-a42411291697" />|
